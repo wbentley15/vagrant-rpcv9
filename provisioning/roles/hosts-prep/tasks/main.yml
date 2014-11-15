@@ -6,6 +6,12 @@
 - name: Insert key into authorized keys file
   shell: chdir=/root/.ssh cat /usr/share/id_rsa.pub >> /root/.ssh/authorized_keys
   
+- name: Install apt-get updates
+  command: apt-get update
+  
+- name: Upgrade via apt-get
+  command: apt-get -q -y upgrade
+
 - name: Install additional packages
   apt: name={{item}} state=present
   with_items:
@@ -15,6 +21,7 @@
    - openssh-server
    - sudo
    - tcpdump
+   - vim
    
 - name: Create br-mgmt Linux bridge
   command: brctl addbr br-mgmt

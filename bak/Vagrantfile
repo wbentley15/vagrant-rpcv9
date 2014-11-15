@@ -7,8 +7,10 @@ VAGRANTFILE_API_VERSION = "2"
 $script = <<SCRIPT
 cat << EOF >> /etc/hosts
 172.29.236.2 021579-infra01
+172.29.236.3 021579-infra02
+172.29.236.4 021579-infra03
 172.29.236.5 021579-logging01
-172.29.236.6 021579-storage01
+172.29.236.6 021579-network01
 172.29.236.10 021579-compute001
 EOF
 SCRIPT
@@ -82,6 +84,37 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
   # End logging1
   
+  # Begin network1
+  config.vm.define "network1" do |network1_config|
+    network1_config.vm.hostname = "021579-network01"
+
+    network1_config.vm.provision "shell", inline: $script
+
+    # eth1
+    network1_config.vm.network "private_network", ip: "172.29.236.6"
+    # eth2
+    network1_config.vm.network "private_network", ip: "172.29.240.6"
+    # eth3
+    network1_config.vm.network "private_network", ip: "172.29.236.16"
+        
+    network1_config.vm.provider "vmware_fusion" do |v|
+        v.vmx["memsize"] = "2048"
+        v.vmx["numvcpus"] = "1"
+    end
+
+    network1_config.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", "2048"]
+        v.customize ["modifyvm", :id, "--cpus", "1"]
+        v.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"]
+    end
+    
+    network1_config.vm.provision "ansible" do |ansible|
+    	ansible.extra_vars = { ansible_ssh_user: 'vagrant' }
+        ansible.playbook = "provisioning/base.yml"
+    end
+  end
+  # End network1
+
   # Begin compute1
   config.vm.define "compute1" do |compute1_config|
     compute1_config.vm.hostname = "021579-compute001"
@@ -96,12 +129,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     compute1_config.vm.network "private_network", ip: "172.29.236.20"
     
     compute1_config.vm.provider "vmware_fusion" do |v|
-        v.vmx["memsize"] = "2048"
+        v.vmx["memsize"] = "3072"
         v.vmx["numvcpus"] = "2"
     end
 
     compute1_config.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", "2048"]
+        v.customize ["modifyvm", :id, "--memory", "3072"]
         v.customize ["modifyvm", :id, "--cpus", "2"]
         v.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"]
     end
